@@ -133,10 +133,10 @@ fclose(fid);
 disp('Writing pressure values to text files...');
 % Write offset LVP to text file. 
 filename = ['RegisteredPressure/', output.simulation_name, '_registered_LVP.txt'];
-WriteToTextFile(output.LVP, filename); 
+WriteToTextFile(output.LVP, filename, haemo.pwp_toggle); 
 % Write no offset LV pressures to text file.
 filename = ['RegisteredPressure/', output.simulation_name, '_registered_LVP_no_offset.txt'];
-WriteToTextFile(output.LVP_no_offset, filename);
+WriteToTextFile(output.LVP_no_offset, filename, haemo.pwp_toggle);
 % Write offset pressure average
 fw_mean = fopen(['RegisteredPressure/', output.simulation_name, '_registered_LVP_mean.txt'], 'w');
 for i = 1:length(output.LVP_average)

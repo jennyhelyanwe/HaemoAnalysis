@@ -186,86 +186,130 @@ if haemo.pwp_toggle == 1
     LVP_no_offset.es_eivr(:, ~any(LVP_no_offset.es_eivr,1)) = [];
     LVP_no_offset.eivr_ds(:, ~any(LVP_no_offset.eivr_ds,1)) = [];
 else
-    % PWP is not available, so use 2nd derivative of LVP trace to locate
-    % the end of IVR. 
-    d_m_es2eivr = mri.eIVR - mri.ES + 1;
-    LVP.es_eivr = zeros(d_m_es2eivr-1, haemo.n_LVP*haemo.n_AOP);
-    LVP_no_offset.es_eivr = zeros(d_m_es2eivr-1, haemo.n_LVP*haemo.n_AOP);
-    d_m_eivr2ds = mri.DS - mri.eIVR + 1 ;
-    LVP.eivr_ds = zeros(d_m_eivr2ds-1, haemo.n_LVP*haemo.n_AOP);
-    LVP_no_offset.eivr_ds = zeros(d_m_eivr2ds-1, haemo.n_LVP*haemo.n_AOP);
-    eIVR.i = zeros(1, haemo.n_LVP*haemo.n_AOP);
-    eIVR.t = eIVR.i;
-    eIVR_count = 1;
+    % PWP is not available, then just linearly interpolate between ES to DS. 
+    d_m_es2ds = mri.DS - mri.ES + 1;
+    LVP.es_ds = zeros(d_m_es2ds-2, haemo.n_LVP*haemo.n_AOP);
+    LVP_no_offset.es_ds = zeros(d_m_es2ds-2, haemo.n_LVP*haemo.n_AOP);
+    es_count = 1;
     for i = 1:haemo.n_LVP
         LVP_c = haemo.LVP_cycles{i};
         t_c = haemo.t_cycles{i};
         for j = 1:haemo.n_AOP
-            LVP_es_ds = LVP_c(ES.i(eIVR_count):haemo.DS.i(i));
-            % Use 2nd derivative of LVP to identify end IVR. 
-            LVP_dd = zeros(1, length(LVP_es_ds));
-            for k = 2:(size(LVP_es_ds, 2)-1)
-                LVP_dd(k) = (LVP_es_ds(k+1) - 2*LVP_es_ds(k) + LVP_es_ds(k-1))/(haemo.t_resolution)^2;
-            end
-            [~, locs] = findpeaks(LVP_dd, 'SortStr', 'descend');
-            if ~isempty(locs)
-                eIVR.i(eIVR_count) = locs(end) + ES.i(eIVR_count);
-            end
-            eIVR.t(eIVR_count) = t_c(eIVR.i(eIVR_count));
-            % Interpolate pressure from ES to end IVR.
-            d_p_es2eivr = eIVR.i(eIVR_count) - ES.i(eIVR_count);
-            es_eivr_raw = LVP_c(ES.i(eIVR_count):eIVR.i(eIVR_count));
-            interpolated_pressure = LinearInterpolatePressure(es_eivr_raw, d_p_es2eivr, d_m_es2eivr);
-            LVP_no_offset.es_eivr(:, eIVR_count) = interpolated_pressure;
-            LVP.es_eivr(:, eIVR_count) = interpolated_pressure - haemo.DS.p(i);
+            d_p_es2ds = haemo.DS.i(i) - ES.i(es_count);
+            es_ds_raw = LVP_c(ES.i(es_count):haemo.DS.i(i));
+            interpolated_pressure = LinearInterpolatePressure(es_ds_raw, d_p_es2ds, d_m_es2ds);
+            LVP_no_offset.es_ds(:, es_count) = interpolated_pressure(2:end-1);
+            LVP.es_ds(:, es_count) = interpolated_pressure(2:end-1) - haemo.DS.p(i);
             % Plot analysis.
             figure(imageFig);
-            plot(mri.t((m_ES+1):m_eIVR), LVP.es_eivr(:,eIVR_count), 'm*');
+            plot(mri.t((mri.ES+1):(mri.DS-1)), LVP.es_ds(:, es_count), 'm*');
             figure(imageNoOffsetFig);
-            plot(mri.t((m_ES+1):m_eIVR), LVP_no_offset.es_eivr(:,eIVR_count), 'm*');
+            plot(mri.t((mri.ES+1):(mri.DS-1)), LVP_no_offset.es_ds(:,es_count), 'm*');
             figure(PVFig);
-            plot(mri.V((m_ES+1):m_eIVR), LVP.es_eivr(:,eIVR_count), 'm*');
-            
-            % end IVR to DS
-            d_p_eivr2ds = haemo.DS.i(i) - eIVR.i(eIVR_count);
-            eivr_ds_raw = LVP_c(eIVR.i(eIVR_count):haemo.DS.i(i));
-            interpolated_pressure = LinearInterpolatePressure(eivr_ds_raw, d_p_eivr2ds, d_m_eivr2ds);
-            LVP_no_offset.eivr_ds(:, eIVR_count) = interpolated_pressure(2:end-1);
-            LVP.eivr_ds(:, eIVR_count) = interpolated_pressure(2:end-1) - haemo.DS.p(i);
-            % Plot analysis.
-            figure(imageFig);
-            plot(mri.t((mri.eIVR+1):(mri.DS-1)), LVP.eivr_ds(:, eIVR_count), 'c*');
-            figure(imageNoOffsetFig);
-            plot(mri.t((mri.eIVR+1):(mri.DS-1)), LVP_no_offset.eivr_ds(:, eIVR_count), 'c*');
-            figure(PVFig);
-            plot(mri.V((mri.eIVR+1):(mri.DS-1)), LVP.eivr_ds(:, eIVR_count), 'c*');
-            
-            eIVR_count = eIVR_count + 1;
+            plot(mri.V((mri.ES+1):(mri.DS-1)), LVP.es_ds(:,es_count), 'm*');
+            es_count = es_count + 1;
         end
-    end
+    end  
+%     %so use 2nd derivative of LVP trace to locate
+%     % the end of IVR. 
+%     d_m_es2eivr = mri.eIVR - mri.ES + 1;
+%     LVP.es_eivr = zeros(d_m_es2eivr-1, haemo.n_LVP*haemo.n_AOP);
+%     LVP_no_offset.es_eivr = zeros(d_m_es2eivr-1, haemo.n_LVP*haemo.n_AOP);
+%     d_m_eivr2ds = mri.DS - mri.eIVR + 1 ;
+%     LVP.eivr_ds = zeros(d_m_eivr2ds-2, haemo.n_LVP*haemo.n_AOP);
+%     LVP_no_offset.eivr_ds = zeros(d_m_eivr2ds-2, haemo.n_LVP*haemo.n_AOP);
+%     eIVR.i = zeros(1, haemo.n_LVP*haemo.n_AOP);
+%     eIVR.t = eIVR.i;
+%     eIVR_count = 1;
+%     for i = 1:haemo.n_LVP
+%         LVP_c = haemo.LVP_cycles{i};
+%         t_c = haemo.t_cycles{i};
+%         for j = 1:haemo.n_AOP
+%             LVP_es_ds = LVP_c(ES.i(eIVR_count):haemo.DS.i(i));
+%             % Use 2nd derivative of LVP to identify end IVR. 
+%             LVP_dd = zeros(1, length(LVP_es_ds));
+%             for k = 2:(size(LVP_es_ds, 2)-1)
+%                 LVP_dd(k) = (LVP_es_ds(k+1) - 2*LVP_es_ds(k) + LVP_es_ds(k-1))/(haemo.t_resolution)^2;
+%             end
+%             [~, locs] = findpeaks(LVP_dd, 'SortStr', 'descend');
+%             if ~isempty(locs)
+%                 eIVR.i(eIVR_count) = locs(end) + ES.i(eIVR_count);
+%             end
+%             d_p_eivr2ds = haemo.DS.i(i) - eIVR.i(eIVR_count);
+%             d_p_es2eivr = eIVR.i(eIVR_count) - ES.i(eIVR_count);
+%             if (d_p_eivr2ds > d_m_eivr2ds) && (d_p_es2eivr > d_m_es2eivr)
+%                 eIVR.t(eIVR_count) = t_c(eIVR.i(eIVR_count));
+%                 % Interpolate pressure from ES to end IVR.
+%                 es_eivr_raw = LVP_c(ES.i(eIVR_count):eIVR.i(eIVR_count));
+%                 interpolated_pressure = LinearInterpolatePressure(es_eivr_raw, d_p_es2eivr, d_m_es2eivr);
+%                 LVP_no_offset.es_eivr(:, eIVR_count) = interpolated_pressure(2:end);
+%                 LVP.es_eivr(:, eIVR_count) = interpolated_pressure(2:end) - haemo.DS.p(i);
+%                 % Plot analysis.
+%                 figure(imageFig);
+%                 plot(mri.t((mri.ES+1):mri.eIVR), LVP.es_eivr(:,eIVR_count), 'm*');
+%                 figure(imageNoOffsetFig);
+%                 plot(mri.t((mri.ES+1):mri.eIVR), LVP_no_offset.es_eivr(:,eIVR_count), 'm*');
+%                 figure(PVFig);
+%                 plot(mri.V((mri.ES+1):mri.eIVR), LVP.es_eivr(:,eIVR_count), 'm*');
+% 
+%                 % end IVR to DS
+%                 eivr_ds_raw = LVP_c(eIVR.i(eIVR_count):haemo.DS.i(i));
+%                 interpolated_pressure = LinearInterpolatePressure(eivr_ds_raw, d_p_eivr2ds, d_m_eivr2ds);
+%                 LVP_no_offset.eivr_ds(:, eIVR_count) = interpolated_pressure(2:end-1);
+%                 LVP.eivr_ds(:, eIVR_count) = interpolated_pressure(2:end-1) - haemo.DS.p(i);
+%                 % Plot analysis.
+%                 figure(imageFig);
+%                 plot(mri.t((mri.eIVR+1):(mri.DS-1)), LVP.eivr_ds(:, eIVR_count), 'c*');
+%                 figure(imageNoOffsetFig);
+%                 plot(mri.t((mri.eIVR+1):(mri.DS-1)), LVP_no_offset.eivr_ds(:, eIVR_count), 'c*');
+%                 figure(PVFig);
+%                 plot(mri.V((mri.eIVR+1):(mri.DS-1)), LVP.eivr_ds(:, eIVR_count), 'c*');
+%                 eIVR_count = eIVR_count + 1;
+%             end
+%         end
+%     end
 end
 %% Put all interpolated segments of pressure together. 
 output.LVP = LVP;
 output.LVP_no_offset = LVP_no_offset;
-output.LVP_average = [mean(LVP.ds_ed(end,:)); mean(LVP.ed_eivc, 2); 
-    mean(LVP.eivc_es, 2); mean(LVP.es_eivr, 2); mean(LVP.eivr_ds, 2); 
-    mean(LVP.ds_ed(1:end-1, :), 2)];
-output.LVP_ste = [std(LVP.ds_ed(end,:))/sqrt(length(LVP.ds_ed(end,:))); 
-    std(LVP.ed_eivc,0,2)/sqrt(length(LVP.ed_eivc)); 
-    std(LVP.eivc_es,0,2)/sqrt(length(LVP.eivc_es)); 
-    std(LVP.es_eivr,0,2)/sqrt(length(LVP.es_eivr)); 
-    std(LVP.eivr_ds,0,2)/sqrt(length(LVP.eivr_ds)); 
-    std(LVP.ds_ed(1:end-1, :),0,2)/sqrt(length(LVP.ds_ed(1:end-1, :)))];
-output.LVP_no_offset_average = [mean(LVP_no_offset.ds_ed(end,:));
-    mean(LVP_no_offset.ed_eivc, 2); mean(LVP_no_offset.eivc_es, 2); 
-    mean(LVP_no_offset.es_eivr, 2); mean(LVP_no_offset.eivr_ds, 2);
-    mean(LVP_no_offset.ds_ed(1:end-1, :), 2)];
-output.LVP_no_offset_ste = [std(LVP_no_offset.ds_ed(end,:))/sqrt(length(LVP_no_offset.ds_ed(end,:))); 
-    std(LVP_no_offset.ed_eivc,0,2)/sqrt(length(LVP_no_offset.ed_eivc)); 
-    std(LVP_no_offset.eivc_es,0,2)/sqrt(length(LVP_no_offset.eivc_es)); 
-    std(LVP_no_offset.es_eivr,0,2)/sqrt(length(LVP_no_offset.es_eivr)); 
-    std(LVP_no_offset.eivr_ds,0,2)/sqrt(length(LVP_no_offset.eivr_ds)); 
-    std(LVP_no_offset.ds_ed(1:end-1, :),0,2)/sqrt(length(LVP_no_offset.ds_ed(1:end-1, :)))]; 
+if haemo.pwp_toggle == 1
+    output.LVP_average = [mean(LVP.ds_ed(end,:)); mean(LVP.ed_eivc, 2); 
+        mean(LVP.eivc_es, 2); mean(LVP.es_eivr, 2); mean(LVP.eivr_ds, 2); 
+        mean(LVP.ds_ed(1:end-1, :), 2)];
+    output.LVP_ste = [std(LVP.ds_ed(end,:))/sqrt(length(LVP.ds_ed(end,:))); 
+        std(LVP.ed_eivc,0,2)/sqrt(length(LVP.ed_eivc)); 
+        std(LVP.eivc_es,0,2)/sqrt(length(LVP.eivc_es)); 
+        std(LVP.es_eivr,0,2)/sqrt(length(LVP.es_eivr)); 
+        std(LVP.eivr_ds,0,2)/sqrt(length(LVP.eivr_ds)); 
+        std(LVP.ds_ed(1:end-1, :),0,2)/sqrt(length(LVP.ds_ed(1:end-1, :)))];
+    output.LVP_no_offset_average = [mean(LVP_no_offset.ds_ed(end,:));
+        mean(LVP_no_offset.ed_eivc, 2); mean(LVP_no_offset.eivc_es, 2); 
+        mean(LVP_no_offset.es_eivr, 2); mean(LVP_no_offset.eivr_ds, 2);
+        mean(LVP_no_offset.ds_ed(1:end-1, :), 2)];
+    output.LVP_no_offset_ste = [std(LVP_no_offset.ds_ed(end,:))/sqrt(length(LVP_no_offset.ds_ed(end,:))); 
+        std(LVP_no_offset.ed_eivc,0,2)/sqrt(length(LVP_no_offset.ed_eivc)); 
+        std(LVP_no_offset.eivc_es,0,2)/sqrt(length(LVP_no_offset.eivc_es)); 
+        std(LVP_no_offset.es_eivr,0,2)/sqrt(length(LVP_no_offset.es_eivr)); 
+        std(LVP_no_offset.eivr_ds,0,2)/sqrt(length(LVP_no_offset.eivr_ds)); 
+        std(LVP_no_offset.ds_ed(1:end-1, :),0,2)/sqrt(length(LVP_no_offset.ds_ed(1:end-1, :)))]; 
+else
+    output.LVP_average = [mean(LVP.ds_ed(end,:)); mean(LVP.ed_eivc, 2); 
+        mean(LVP.eivc_es, 2); mean(LVP.es_ds, 2); mean(LVP.ds_ed(1:end-1, :), 2)];
+    output.LVP_ste = [std(LVP.ds_ed(end,:))/sqrt(length(LVP.ds_ed(end,:))); 
+        std(LVP.ed_eivc,0,2)/sqrt(length(LVP.ed_eivc)); 
+        std(LVP.eivc_es,0,2)/sqrt(length(LVP.eivc_es)); 
+        std(LVP.es_ds,0,2)/sqrt(length(LVP.es_ds));  
+        std(LVP.ds_ed(1:end-1, :),0,2)/sqrt(length(LVP.ds_ed(1:end-1, :)))];
+    output.LVP_no_offset_average = [mean(LVP_no_offset.ds_ed(end,:));
+        mean(LVP_no_offset.ed_eivc, 2); mean(LVP_no_offset.eivc_es, 2); 
+        mean(LVP_no_offset.es_ds, 2); mean(LVP_no_offset.ds_ed(1:end-1, :), 2)];
+    output.LVP_no_offset_ste = [std(LVP_no_offset.ds_ed(end,:))/sqrt(length(LVP_no_offset.ds_ed(end,:))); 
+        std(LVP_no_offset.ed_eivc,0,2)/sqrt(length(LVP_no_offset.ed_eivc)); 
+        std(LVP_no_offset.eivc_es,0,2)/sqrt(length(LVP_no_offset.eivc_es)); 
+        std(LVP_no_offset.es_ds,0,2)/sqrt(length(LVP_no_offset.es_ds)); 
+        std(LVP_no_offset.ds_ed(1:end-1, :),0,2)/sqrt(length(LVP_no_offset.ds_ed(1:end-1, :)))];
+end
+output.pwp_toggle = haemo.pwp_toggle;
 
 %% Save images of analyses to jpeg files. 
 temp = regexp(mri.volume_path, '[/]', 'split'); 
@@ -285,8 +329,10 @@ ylabel('Pressure (kPa)');
 axis([20 450 0 20]);
 print(PVFig, '-djpeg', ['AnalysisFigures/', output.simulation_name, '_PV']);
 figure(tracesFig)
-for i = 1:length(eIVR.t)
-    plot([eIVR.t(i), eIVR.t(i)], [0 25], 'k-');
+if haemo.pwp_toggle == 1
+    for i = 1:length(eIVR.t)
+        plot([eIVR.t(i), eIVR.t(i)], [0 25], 'k-');
+    end
 end
 title(['Illustration of haemo analyses ', output.simulation_name], 'interpreter', 'none');
 xlabel('Time (s)');

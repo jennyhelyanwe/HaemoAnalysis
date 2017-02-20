@@ -1,4 +1,4 @@
-function WriteToTextFile(x, filename)
+function WriteToTextFile(x, filename, pwp_toggle)
 fw = fopen(filename, 'w');
 % ED frame. 
 frame_num = 1;
@@ -25,24 +25,36 @@ for i = 1:length(x.eivc_es(:,1));
     fprintf(fw, '\n');
 end
 frame_num = frame_num + i;
-% ES to end IVR frames. 
-for i = 1:length(x.es_eivr(:,1));
-    fprintf(fw, '%d\t', frame_num + i);
-    for j = 1:length(x.es_eivr(1,:));
-        fprintf(fw, '%f\t', x.es_eivr(i,j));
+if pwp_toggle == 1
+    % ES to end IVR frames. 
+    for i = 1:length(x.es_eivr(:,1));
+        fprintf(fw, '%d\t', frame_num + i);
+        for j = 1:length(x.es_eivr(1,:));
+            fprintf(fw, '%f\t', x.es_eivr(i,j));
+        end
+        fprintf(fw, '\n');
     end
-    fprintf(fw, '\n');
-end
-frame_num = frame_num + i;
-% End IVR to DS frames.
-for i = 1:length(x.eivr_ds(:,1));
-    fprintf(fw, '%d\t', frame_num + i);
-    for j = 1:length(x.eivr_ds(1,:));
-        fprintf(fw, '%f\t', x.eivr_ds(i,j));
+    frame_num = frame_num + i;
+    % End IVR to DS frames.
+    for i = 1:length(x.eivr_ds(:,1));
+        fprintf(fw, '%d\t', frame_num + i);
+        for j = 1:length(x.eivr_ds(1,:));
+            fprintf(fw, '%f\t', x.eivr_ds(i,j));
+        end
+        fprintf(fw, '\n');
     end
-    fprintf(fw, '\n');
+    frame_num = frame_num + i;
+else
+    % ES to DS frames. 
+     for i = 1:length(x.es_ds(:,1));
+        fprintf(fw, '%d\t', frame_num + i);
+        for j = 1:length(x.es_ds(1,:));
+            fprintf(fw, '%f\t', x.es_ds(i,j));
+        end
+        fprintf(fw, '\n');
+    end
+    frame_num = frame_num + i;
 end
-frame_num = frame_num + i;
 % DS to ED frames. 
 for i = 1:length(x.ds_ed(1:(end-1),1));
     fprintf(fw, '%d\t', frame_num + i);
