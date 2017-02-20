@@ -127,6 +127,7 @@ mri.V = V';
 fclose(fid);
 
 %% Interpolate pressure at each MRI frame. 
+disp('Aligning pressure with MR images...');
 [output] = AlignPressureMRI(haemo, mri);
 
 %% Write pressure values to text files.

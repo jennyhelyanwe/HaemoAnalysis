@@ -37,6 +37,7 @@ PVFig = figure; % This will show the pressure volume curves.
 hold on
 
 %% Interpolate between DS and ED, this should have n_LVP alternatives. 
+disp('Interpolating between DS and ED...');
 d_m_ds2ed = mri.num_frames - mri.DS + mri.ED + 1; % Number of frames in images from DS to ED. 
 d_p_ds2ed = haemo.ED.i - haemo.DS.i; % Number of data points in pressure from DS to ED. 
 LVP.ds_ed = zeros(d_m_ds2ed, haemo.n_LVP);
@@ -58,6 +59,7 @@ for i = 1:haemo.n_LVP
 end
 
 %% Interpolation between ED & end IVC and between endIVC & ES has n_LVP*n_AOP alternatives. 
+disp('Interpolating between ED and end of IVC and then to ES...');
 % Aortic inflection point marks end IVC, and splits the LVP trace from ED to ES
 % into two portions. 
 figure(tracesFig);
@@ -119,6 +121,7 @@ for i = 1:haemo.n_LVP
 end
 
 %% Interpolation between ES & end IVR and between end IVR & DS has n_LVP*n_AOP*n_PWP alternatives.
+disp('Interpolating between ES and end of IVR and then to DS...');
 if haemo.pwp_toggle == 1
     % PWP available, use V waves to locate end IVR. 
     d_m_es2eivr = mri.eIVR - mri.ES + 1;
@@ -162,19 +165,21 @@ if haemo.pwp_toggle == 1
                 
                 % end IVR to DS
                 d_p_eivr2ds = haemo.DS.i(i) - eIVR.i(total_count);
-                eivr_ds_raw = LVP_c(eIVR.i(total_count):haemo.DS.i(i));
-                interpolated_pressure = LinearInterpolatePressure(eivr_ds_raw, d_p_eivr2ds, d_m_eivr2ds);
-                LVP_no_offset.eivr_ds(:, total_count) = interpolated_pressure(2:end-1);
-                LVP.eivr_ds(:, total_count) = interpolated_pressure(2:end-1) - haemo.DS.p(i);
-                % Plot analysis. 
-                figure(imageFig);
-                plot(mri.t((mri.eIVR+1):(mri.DS-1)), LVP.eivr_ds(:, total_count), 'c*');
-                figure(imageNoOffsetFig);
-                plot(mri.t((mri.eIVR+1):(mri.DS-1)), LVP_no_offset.eivr_ds(:, total_count), 'c*');
-                figure(PVFig);
-                plot(mri.V((mri.eIVR+1):(mri.DS-1)), LVP.eivr_ds(:, total_count), 'c*');
+                if d_p_eivr2ds > d_m_eivr2ds
+                    eivr_ds_raw = LVP_c(eIVR.i(total_count):haemo.DS.i(i));
+                    interpolated_pressure = LinearInterpolatePressure(eivr_ds_raw, d_p_eivr2ds, d_m_eivr2ds);
+                    LVP_no_offset.eivr_ds(:, total_count) = interpolated_pressure(2:end-1);
+                    LVP.eivr_ds(:, total_count) = interpolated_pressure(2:end-1) - haemo.DS.p(i);
+                    % Plot analysis. 
+                    figure(imageFig);
+                    plot(mri.t((mri.eIVR+1):(mri.DS-1)), LVP.eivr_ds(:, total_count), 'c*');
+                    figure(imageNoOffsetFig);
+                    plot(mri.t((mri.eIVR+1):(mri.DS-1)), LVP_no_offset.eivr_ds(:, total_count), 'c*');
+                    figure(PVFig);
+                    plot(mri.V((mri.eIVR+1):(mri.DS-1)), LVP.eivr_ds(:, total_count), 'c*');
 
-                total_count = total_count + 1; 
+                    total_count = total_count + 1; 
+                end
             end
             es_count = es_count + 1;
         end
@@ -269,7 +274,8 @@ else
 %         end
 %     end
 end
-%% Put all interpolated segments of pressure together. 
+%% Put all interpolated segments of pressure together.
+disp('Concatenating pressure segments...');
 output.LVP = LVP;
 output.LVP_no_offset = LVP_no_offset;
 if haemo.pwp_toggle == 1
@@ -311,7 +317,8 @@ else
 end
 output.pwp_toggle = haemo.pwp_toggle;
 
-%% Save images of analyses to jpeg files. 
+%% Save images of analyses to jpeg files.
+disp('Saving analysis figures as JPEG files...');
 temp = regexp(mri.volume_path, '[/]', 'split'); 
 output.simulation_name = temp{1};
 figure(imageFig);  
