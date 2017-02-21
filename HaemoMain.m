@@ -164,4 +164,9 @@ fclose(fw_no_mean);
 % ylabel('LV pressure (kPa)')
 % set(gca, 'fontsize', 16);
 
+%% Save analysis outputs as .mat files. 
+save(['RegisteredPressure/', output.simulation_name, '_mri'], 'mri');
+save(['RegisteredPressure/', output.simulation_name, '_lvp'], 'output');
+
+%% Wrap up. 
 disp('Finished haemodynamic analysis.');

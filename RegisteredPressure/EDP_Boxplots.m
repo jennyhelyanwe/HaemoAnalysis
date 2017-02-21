@@ -74,3 +74,4 @@ title('End diastolic LV pressure scatter plots');
 %set(gca, 'linewidth', 2);
 legend(h([1, 6, 17]), 'Control', 'HFpEF', 'HFrEF');
 plot(0:num, repmat(15, 1, num+1), 'r-', 'LineWidth', 2);
+print(figure, '-djpeg', 'EDP_scatter_plot');

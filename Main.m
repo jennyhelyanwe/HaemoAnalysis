@@ -11,3 +11,7 @@ for i = study_names
     % Run analysis for each study. 
     HaemoMain(char(i));
 end
+
+chdir('RegisteredPressure');
+PassivePressureVolumeCurves;
+EDP_Boxplots;
