@@ -30,20 +30,26 @@ for i = study_names
     style = [colour, '.-'];
     figure(figure_offset);
     h_offset(count) = plot(mri.V([mri.DS:end, mri.ED]), output.LVP_average([mri.DS:end, mri.ED])*7.5,style);
+    h_text = text(mri.V(mri.ED), output.LVP_average(mri.ED)*7.5, i);
+    set(h_text, 'Interpreter', 'none');
     figure(figure_no_offset);
     h_no_offset(count) = plot(mri.V([mri.DS:end, mri.ED]), output.LVP_no_offset_average([mri.DS:end, mri.ED])*7.5, style);
+    h_text = text(mri.V(mri.ED), output.LVP_no_offset_average(mri.ED)*7.5, i);
+    set(h_text, 'Interpreter', 'none');
     count = count + 1;
 end
 figure(figure_offset);
 title('Passive pressure volume curve');
 ylabel('Pressure (mmHg)');
 xlabel('Volume (mL)');
+set(gca, 'DefaultTextInterpreter', 'none');
 legend(h_offset([1, 6, 17]),  'Control', 'HFpEF', 'HFrEF');
 
 figure(figure_no_offset);
 title('Passive pressure volume curve');
 ylabel('Pressure (mmHg)');
 xlabel('Volume (mL)');
+set(gca, 'DefaultTextInterpreter', 'none');
 legend(h_no_offset([1, 6, 17]),  'Control', 'HFpEF', 'HFrEF');
 
 print(figure_offset, '-djpeg', 'PassivePressureVolume_offset');

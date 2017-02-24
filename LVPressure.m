@@ -89,16 +89,22 @@ while n <= num_files
 end
 cd('../');
 %Filtering only for studies MR_119119 (N=45) and STF_11 (N=25): 
+Pressure_prefilter = Pressure;
 if strcmp(study_name, 'MR_119119')
     Pressure = medfilt1(Pressure, 45);
 elseif strcmp(study_name, 'MR_152152')
     Pressure = medfilt1(Pressure, 25);
+elseif strcmp(study_name, 'MR_042042')
+    Pressure = medfilt1(Pressure, 25);
+else
+    Pressure = medfilt1(Pressure, 20); % Apply general filter to the trace to get rid of artefacts. 
 end
 
 %% Plot raw trace and landmark points. 
 raw = figure('units', 'normalized', 'outerposition', [0 0 1 1]);
-plot(t, Pressure, 'LineWidth', 2);
+plot(t, Pressure, 'k', 'LineWidth', 2);
 hold on
+plot(t, Pressure_prefilter, 'm', 'LineWidth', 0.7);
 plot(St, Pressure(S), 'r.', 'MarkerSize', 30); % Plot peak points in red. 
 plot(Dt, Pressure(D), 'b.', 'MarkerSize', 30); % Plot diastasis in blue. 
 plot(Et, Pressure(E), 'g.', 'MarkerSize', 30); % Plot ED in green. 
@@ -106,7 +112,7 @@ plot(t(R), Pressure(R), 'bo', 'MarkerSize', 5); % Plot R peak occurence in blue 
 title('Pressure trace');
 ylabel('LV pressure (mmHg)');
 xlabel('Time (s)');
-legend('Pressure trace', 'Peaks', 'DS', 'ED', 'ECG R peak');
+legend('Pressure trace', 'Pressure pre-filtering', 'Peaks', 'DS', 'ED', 'ECG R peak');
 set(gca, 'fontsize', 16);
 %axis([0 13 0 180]);
 plot(t, repmat(15, 1, length(t)), 'r-');
