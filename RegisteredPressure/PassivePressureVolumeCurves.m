@@ -17,6 +17,9 @@ hold on
 figure_no_offset = figure;
 hold on
 count = 1;
+dpdv= zeros(1, length(study_names));
+fw = fopen('PassivedPdV.txt', 'w');
+fprintf(fw, 'Study name\tdPdV\n');
 for i = study_names
     load([char(i), '_mri.mat']);
     load([char(i), '_lvp.mat']);
@@ -35,9 +38,12 @@ for i = study_names
     figure(figure_no_offset);
     h_no_offset(count) = plot(mri.V([mri.DS:end, mri.ED]), output.LVP_no_offset_average([mri.DS:end, mri.ED])*7.5, style);
     h_text = text(mri.V(mri.ED), output.LVP_no_offset_average(mri.ED)*7.5, i);
+    f = fit(mri.V([mri.DS:end, mri.ED])', output.LVP_no_offset_average([mri.DS:end, mri.ED])*7.5, 'poly1');
+    fprintf(fw, '%s\t%f\n', char(i), f.p1);
     set(h_text, 'Interpreter', 'none');
     count = count + 1;
 end
+fclose(fw);
 figure(figure_offset);
 title('Passive pressure volume curve');
 ylabel('Pressure (mmHg)');
