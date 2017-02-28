@@ -6,7 +6,7 @@ study_names = {'STF_16', 'STF_17', 'STF_18','STF_19', 'STF_20',  'MR_250250'...
     'MR_091091', 'MR_124124', 'MR_126126', 'STF_01', 'STF_02', 'STF_08', 'STF_09', 'STF_13', ...
     'MR_042042', 'STF_10', 'STF_11', 'MR_262262', 'STF_06', 'STF_12', 'MR_160160'};
 ds_frame = [23, 16, 22, 22, 17, 24, 24, 22, 16, 25, 25, 24, 20, 21, 18, 25, 23, 14, 18, 19, 21, 18, 21, 18, 23, 20, 23, 14];
-figure
+fig = figure;
 hold on
 EDP = [];
 grp = [];
@@ -58,9 +58,12 @@ for i = study_names
 end
 fclose(fidw);
 %boxplot(EDP*7.5, grp);
-set(gca, 'XTickLabelRotation', 60);
+set(gca, 'XTickLabelRotation', 90);
+set(gca, 'XTickLabel', study_names);
+set(gca, 'XTick', [1:28]);
+set(gca, 'TickLabelInterpreter', 'none');
 set(gca, 'fontsize', 16);
 ylabel('LV-DSP (kPa)');
-title('Diastasis LV pressure box plots');
+title('Diastasis LVP');
 %set(gca, 'linewidth', 2);
-
+print(fig, '-djpeg', 'DSP_scatter_plot');
